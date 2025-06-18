@@ -1,0 +1,275 @@
+# Time Series Forecasting for Prospective Stock Investments
+
+# library
+library(forecast)
+library(lubridate)
+library(ggplot2)
+library(MLmetrics)
+library(glue)
+library(dplyr)
+library(Quandl)
+library(tibble)
+library(NasdaqDataLink)
+
+# Wd
+setwd("~/Desktop/Proprietary Time Series Analysis Elements")
+
+#Remember to update options data source file before running!
+optionsdata <- read.csv('~/Desktop/Proprietary Time Series Analysis Elements/Historical Options Data/L2_20250523/optionstats_20250523.csv')
+
+#API Keys
+Quandl.api_key("Qw-gs43P63-xRT7dQpX9")
+NasdaqDataLink.api_key("Qw-gs43P63-xRT7dQpX9")
+
+#------------------------------PREP: CHOOSE DATASET--------------------------------
+
+#---SP500------
+
+#stockcsv <- read.csv('~/Desktop/Proprietary Time Series Analysis Elements/SP500.csv')
+
+#tickerlist <- stockcsv$Symbol 
+
+#---300 MOST ACCURATE OF 20,000-------
+
+stockcsv <- read.csv('~/Desktop/Proprietary Time Series Analysis Elements/Accurate Options Data Set.csv')
+
+tickerlist <- stockcsv$ticker
+
+#---500 VERY ACTIVELY TRADED COMPANIES-------
+
+#stockcsv <- read.csv('~/Desktop/Proprietary Time Series Analysis Elements/500 Active Options Tickers.csv')
+
+#tickerlist <- stockcsv$ticker
+
+
+#-------Start Running from Here------------------------------
+
+iterationcount = 0
+
+resultsdata <- tibble()
+
+options(scipen = 999)
+
+time_series_analysis <- function() {
+	for (stockticker in tickerlist) {
+	  stockoptionsdata <- optionsdata %>% filter(symbol == stockticker)
+	  # Data
+	  pedata <- NasdaqDataLink.datatable('SHARADAR/SF1',dimension='MRQ',ticker=stockticker)
+	  pricedata <- Quandl.datatable('SHARADAR/SEP', ticker=stockticker)
+	  iterationcount <- iterationcount + 1
+	  print(stockticker)
+	  print(iterationcount)
+	  # Time formatting
+	  pricedata$date <- as.Date(pricedata$date, format = "%Y/%m/%d")
+	  startdate <- min(pricedata$date)
+	  
+	  #Model One Split Into Training and Validation
+	  
+	  modelonesplitdate <- max(pricedata$date) - 90
+	  class(modelonesplitdate)
+	  modelonesplitdate
+	  
+	  trainmodelonedf <- pricedata %>%
+	    filter(date <= modelonesplitdate)
+	 
+	  
+	  validatemodelonedf <- pricedata %>%
+	    filter(date > modelonesplitdate )
+	  
+	  
+	  trainmodelonets <- ts(trainmodelonedf$close, start = startdate, frequency = 7)
+	  
+	  
+	  validatemodelonets <- ts(validatemodelonedf$close, start = startdate, frequency = 7)
+	  
+	  
+	  # Re-Fit HW with training dta
+	  modelone <- HoltWinters(trainmodelonets, seasonal = 'mult')
+	  #plot(modelone)
+	  
+	  
+	  # Make predictions on validation
+	  modeloneprediction <- predict(modelone, length(validatemodelonets))
+	  
+	  
+	  
+	  # Organize & Compare
+	  modelonevalidationDF <- data.frame(idx      = seq_along(modeloneprediction),
+	                                     original = as.vector(validatemodelonets),
+	                                     fit      = modeloneprediction)
+	  
+	  # Examine visual fit
+	  #ggplot(modelonevalidationDF) +
+	  #  geom_line(aes(x=idx, y=original), color = 'black', alpha = 0.5) +
+	  #  geom_line(aes(x=idx, y=fit), colour='red') + theme_bw()
+	  
+	  # Get RMSE
+	  ModelOneRMSE <- RMSE(modelonevalidationDF$original, modelonevalidationDF$fit)
+	  ModelOneRMSE
+	  ModelOneMAPE <- MAPE(modelonevalidationDF$original, modelonevalidationDF$fit)
+	  ModelOneMAPE
+	  ModelOneMaximumErrorValue <- max(abs(modelonevalidationDF$original - modelonevalidationDF$fit))
+	  ModelOneMaximumErrorValue
+	  
+	  #Repeat with Model Two
+	  
+	  
+	  #--------------------Model Two Split Into Training and Validation-------------------------------------------
+	  
+	  modeltwosplitdate <- max(pricedata$date) - 32
+	  class(modeltwosplitdate)
+	  modeltwosplitdate
+	  
+	  trainmodeltwodf <- pricedata %>%
+	    filter(date <= modeltwosplitdate )
+	  
+	  validatemodeltwodf <- pricedata %>%
+	    filter(date > modeltwosplitdate )
+	  
+	  trainmodeltwots <- ts(trainmodeltwodf$close, start = startdate, frequency = 7)
+	  
+	  validatemodeltwots <- ts(validatemodeltwodf$close, start = startdate, frequency = 7)
+	  
+	  
+	  # Re-Fit HW with training dta
+	  modeltwo <- HoltWinters(trainmodeltwots, seasonal = 'mult')
+	  #plot(modeltwo)
+	  
+	  
+	  # Make predictions on validation
+	  modeltwoprediction <- predict(modeltwo, length(validatemodeltwots))
+	  
+	  
+	  
+	  # Organize & Compare
+	  modeltwovalidationDF <- data.frame(idx      = seq_along(modeltwoprediction),
+	                                     original = as.vector(validatemodeltwots),
+	                                     fit      = modeltwoprediction)
+	  
+	  # Examine visual fit
+	  #ggplot(modeltwovalidationDF) +
+	  #  geom_line(aes(x=idx, y=original), color = 'black', alpha = 0.5) +
+	  #  geom_line(aes(x=idx, y=fit), colour='red') + theme_bw()
+	  
+	  # Get RMSE
+	  ModelTwoRMSE <- RMSE(modeltwovalidationDF$original, modeltwovalidationDF$fit)
+	  ModelTwoRMSE
+	  ModelTwoMAPE <- MAPE(modeltwovalidationDF$original, modeltwovalidationDF$fit)
+	  ModelTwoMAPE
+	  ModelTwoMaximumErrorValue <- max(abs(modeltwovalidationDF$original - modeltwovalidationDF$fit))
+	  ModelTwoMaximumErrorValue
+	  
+	  
+	  #--------------------Future Model Split Predictions-------------------------------------------
+	  
+	  completefuturemodelts <- ts(pricedata$close, start = startdate, frequency = 7)
+	  
+	  
+	  # fit model with all available data
+	  futuremodel <- HoltWinters(completefuturemodelts, seasonal = 'mult')
+	  #plot(futuremodel)
+	  
+	  #-------------------------Choosing prediction time frame--------------------------------
+	  
+	  futuremodelprediction <- predict(futuremodel, 7)
+	  #plot(futuremodelprediction)
+	  
+	  #----------------- DRAW CONCLUSIONS-----------------------------
+	  
+	  
+	  AverageTrainingRMSE <- (ModelOneRMSE + ModelTwoRMSE)/2
+	  AverageTrainingRMSE
+	  
+	  AverageTrainingMAPE <- (ModelOneMAPE + ModelTwoMAPE)/2
+	  AverageTrainingMAPE
+	  
+	  AverageMaximumTrainingError <- mean(ModelOneMaximumErrorValue,ModelTwoMaximumErrorValue)
+	  AverageMaximumTrainingError
+	  
+	  PredictedMax <- max(futuremodelprediction)
+	  PredictedMax
+	  
+	  PredictedMin <- min(futuremodelprediction)
+	  PredictedMin
+	  
+	  ProjectedMean <- mean(futuremodelprediction)
+	  
+	  #------------------FINAL STEP------------------------
+	  
+	  temp_data <- tibble(
+	    ticker = stockticker,
+	    currentprice = pricedata$close[1],
+	    erroradjustedmaxforecast = PredictedMax * (1 + AverageTrainingMAPE),
+	    percentagechangemaxforecast = ((PredictedMax * (1 + AverageTrainingMAPE))-pricedata$close[1])/pricedata$close[1],
+	    maxerrorfound = (AverageMaximumTrainingError/currentprice) * 100,
+	    peratio = pedata$pe[1],
+	    dailyoptionvolume = stockoptionsdata$callvol + stockoptionsdata$putvol,
+	    putcallvolratio = stockoptionsdata$putvol/stockoptionsdata$callvol,
+	    putcalloiratio = stockoptionsdata$putoi/stockoptionsdata$calloi,
+	    putcallcombinedratio = stockoptionsdata$putvol/stockoptionsdata$callvol + stockoptionsdata$putoi/stockoptionsdata$calloi,
+	  )
+	  
+	  resultsdata <- bind_rows(resultsdata, temp_data)
+	  print(resultsdata)
+	}
+  return(resultsdata)
+}
+
+
+
+#-----------------------------COMPILING FINAL DATASET -------------------
+
+
+
+resultsdata <- time_series_analysis()
+
+#glimpse(resultsdata)
+
+
+#----------------------------CHOOSING WHICH DATA TO FOCUS ON-----------------------------
+
+#summary(resultsdata)
+
+#sum(is.na(resultsdata$dailyoptionvolume))/count(resultsdata)
+
+#study <- resultsdata %>%
+#  filter(is.na(putcallcombinedratio))
+
+#study$dailyoptionvolume
+
+#study[study$ticker == 'T', 'dailyoptionvolume']
+
+
+#--------------------------Separating Put and Call Datasets------------------------------
+
+#PUT DATASET
+putdataset <- resultsdata %>%
+                arrange(desc(putcallcombinedratio)) %>%
+                filter(dailyoptionvolume >= 500, percentagechangemaxforecast <= -0.03, peratio <= 20, putcallcombinedratio >= 2.5)
+
+
+#CALL DATASET
+calldataset <- resultsdata %>%
+                arrange(putcallcombinedratio) %>%
+                filter(dailyoptionvolume >= 500, percentagechangemaxforecast >= 0.1, peratio >= 5, putcallcombinedratio <= 0.5)
+
+
+#-----------------------Print Output------------------------------------------------------
+
+current_date <- Sys.Date()
+formatted_date <- format(current_date, "%Y-%m-%d") # YYYY-MM-DD format (e.g., 2024-10-27)
+formatted_date
+
+putfilename <- paste0("~/Desktop/Proprietary Time Series Analysis Elements/Accurate Dataset Put Candidates", formatted_date,".csv")
+putfilename
+
+write.csv(putdataset, file = putfilename)
+
+
+callfilename <- paste0("~/Desktop/Proprietary Time Series Analysis Elements/Accurate Dataset Call Candidates", formatted_date,".csv")
+callfilename
+
+write.csv(calldataset, file = callfilename)
+
+#End
+
