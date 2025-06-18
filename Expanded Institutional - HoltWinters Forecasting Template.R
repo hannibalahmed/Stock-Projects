@@ -1,4 +1,6 @@
-# Time Series Forecasting for Prospective Stock Investments
+# Time Series Forecasting for Prospective Stock/Derivative Investments
+
+#The API subscriptions are not live so the data inputs are not connected at this timne.
 
 # library
 library(forecast)
@@ -17,9 +19,9 @@ setwd("~/Desktop/Proprietary Time Series Analysis Elements")
 #Remember to update options data source file before running!
 optionsdata <- read.csv('~/Desktop/Proprietary Time Series Analysis Elements/Historical Options Data/L2_20250523/optionstats_20250523.csv')
 
-#API Keys
-Quandl.api_key("Qw-gs43P63-xRT7dQpX9")
-NasdaqDataLink.api_key("Qw-gs43P63-xRT7dQpX9")
+#API Keys - (have been removed for this Github repo)
+Quandl.api_key("00000000000000")
+NasdaqDataLink.api_key("00000000000000")
 
 #------------------------------PREP: CHOOSE DATASET--------------------------------
 
