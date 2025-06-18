@@ -1,6 +1,7 @@
 # Time Series Forecasting for Prospective Stock/Derivative Investments
 
-#The API subscriptions are not live so the data inputs are not connected at this timne.
+#The API subscriptions are not active, and API Keys have been removed.  
+#Otherwise code is identical to the functional version.
 
 # library
 library(forecast)
