@@ -1,3 +1,7 @@
+#This was a class assignment from my Master of Liberal Arts at Harvard Extension School.
+#With the appropriate API access, this code accepts a company ticker symbol,
+#then outputs the last 100 days of stock prices in descending chronological order.
+
 import requests
 
 # Uncomment this and add your own key for the pset:
