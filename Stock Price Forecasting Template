@@ -17,10 +17,8 @@ library(NasdaqDataLink)
 # Wd
 setwd("~/Desktop/Proprietary Time Series Analysis Elements")
 
-#Remember to update options data source file before running!
 optionsdata <- read.csv('~/Desktop/Proprietary Time Series Analysis Elements/Historical Options Data/00000000/000000000.csv')
 
-#API Keys - (have been removed for this Github repo)
 Quandl.api_key("00000000000000")
 NasdaqDataLink.api_key("00000000000000")
 
@@ -227,20 +225,6 @@ time_series_analysis <- function() {
 resultsdata <- time_series_analysis()
 
 #glimpse(resultsdata)
-
-
-#----------------------------CHOOSING WHICH DATA TO FOCUS ON-----------------------------
-
-#summary(resultsdata)
-
-#sum(is.na(resultsdata$dailyoptionvolume))/count(resultsdata)
-
-#study <- resultsdata %>%
-#  filter(is.na(putcallcombinedratio))
-
-#study$dailyoptionvolume
-
-#study[study$ticker == 'T', 'dailyoptionvolume']
 
 
 #--------------------------Separating Put and Call Datasets------------------------------
