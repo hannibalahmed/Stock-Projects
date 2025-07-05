@@ -226,7 +226,6 @@ resultsdata <- time_series_analysis()
 
 #glimpse(resultsdata)
 
-
 #--------------------------Separating Put and Call Datasets------------------------------
 
 #PUT DATASET
